@@ -15,7 +15,7 @@ var (
 	allowedAttributes = []string{"class", "src", "href", "title", "alt", "name"}
 )
 
-// CleanHTML
+// CleanHTML cleans the HTML :P
 func CleanHTML(f io.Reader) (string, error) {
 	tokenizer := parser.NewTokenizer(f)
 
@@ -73,15 +73,27 @@ func CleanHTML(f io.Reader) (string, error) {
 
 func cleanEmptyTags(str string) string {
 	str = regexp.MustCompile(`[\xc2\xa0]+`).ReplaceAllLiteralString(str, " ")
+	str = regexp.MustCompile(`[\n\s]+`).ReplaceAllLiteralString(str, " ")
 	str = regexp.MustCompile(`(<br>\s*)+`).ReplaceAllLiteralString(str, "<br>")
 	str = regexp.MustCompile(`<p>(\s*<br>\s*)+`).ReplaceAllLiteralString(str, "<p>")
 	str = regexp.MustCompile(`(\s*<br>\s*)+</p>`).ReplaceAllLiteralString(str, "</p>")
 	str = strings.Replace(str, "<b><br></b>", "", -1)
+
+	// Remove space-only tags
+	str = regexp.MustCompile(`<h.>\s*<\/h.>`).ReplaceAllLiteralString(str, " ")
 	str = regexp.MustCompile(`<b>\s*<\/b>`).ReplaceAllLiteralString(str, " ")
 	str = regexp.MustCompile(`<i>\s*<\/i>`).ReplaceAllLiteralString(str, " ")
 	str = regexp.MustCompile(`<p>\s*<\/p>`).ReplaceAllLiteralString(str, "")
-	str = regexp.MustCompile(`\n{2,}`).ReplaceAllLiteralString(str, "\n\n")
+
+	// Remove paragraphs inside table cells
+	str = regexp.MustCompile(`<td>\s*<p>(.*?)<\/p>\s*<\/td>`).ReplaceAllString(str, "<td>$1</td>")
+
+	// Remove plain anchors
+	str = regexp.MustCompile(`<a name="[^"]+">(.*?)</a>`).ReplaceAllString(str, "$1")
+
 	str = regexp.MustCompile(`<p>\s*(Tidsskriftet Sakprosa)\s*<\/p>\s*<p>\s*(Bind \d+, Nummer \d+)\s*<\/p>\s*<p>\s*(© \d+)\s*<\/p>`).ReplaceAllString(str, "<p>$1<br>$2<br>$3</p>")
+
+	str = regexp.MustCompile(`\s+`).ReplaceAllLiteralString(str, " ")
 	str = strings.Replace(str, "<br><hr>", "<hr>", -1)
 	str = strings.Replace(str, "<h2>", "<h3>", -1)
 	str = strings.Replace(str, "</h2>", "</h3>", -1)
